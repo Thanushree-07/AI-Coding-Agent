@@ -65,7 +65,8 @@ The model runs on Groq's servers and can only produce text. It cannot open files
 4. **Sending the result back.** The result is added to the conversation with `role: "tool"` and the `tool_call_id` of the request it answers. The model's own request is saved first, because the API needs to see the request before the result.
 5. **The loop.** The code calls the model again with the result. If the model asks for another tool, the loop repeats. The loop is a `while msg.tool_calls:`, so it keeps going until the model replies with plain text, which is the final answer.
 
-<img width="988" height="245" alt="image" src="https://github.com/user-attachments/assets/4297d9cf-231c-46de-8da3-0b3f057224c3" />
+  <img width="1953" height="462" alt="AI_coding_assistant" src="https://github.com/user-attachments/assets/8bff459e-a256-4f34-b9d1-2f41271f2486" />
+
 
 
 ## Safety Features
