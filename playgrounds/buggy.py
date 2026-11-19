@@ -1,0 +1,1 @@
+print("Total " + str(5))

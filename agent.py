@@ -1,4 +1,5 @@
 import os
+import subprocess
 import json
 from groq import Groq
 from dotenv import load_dotenv
@@ -30,10 +31,19 @@ def edit_file(path,content):
         return f"error ocurred .coudnt write to specified file :{e}"
 
 
+def run_command(command):
+    try:
+        r=subprocess.run(command,shell=True,capture_output=True,text=True,timeout=30)
+        return (r.stdout+r.stderr) or "(no output)"
+    except Exception as e:
+        return f"Error :{e}"
+
+
 available_tools={
     "read_file":read_file,
     "list_files":list_files,
-    "edit_file":edit_file
+    "edit_file":edit_file,
+    "run_command":run_command
 }
 
 
@@ -105,6 +115,26 @@ tools=[
                 "required":["path","content"],
             },
         },
+    },
+    {
+        "type":"function",
+        "function":{
+
+        "name":"run_command",
+        "description":"Running command on command prompt and give result",
+        "parameters":
+        {
+            "type":"object",
+            "properties":
+            {
+                "command":{
+                    "type":"string",
+                    "description":"this contains the command that needs to be executed"
+                }
+            },
+            "required":["command"],
+        },
+    },
     }
 ]
 
