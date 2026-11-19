@@ -10,9 +10,12 @@ load_dotenv()
 client=Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 def read_file(path):
-    with open(path,"r") as f:
-        data=f.read()
-    return data
+    try:
+        with open(path,"r") as f:
+            data=f.read()
+        return data
+    except Exception as e:
+        return f"Error has ocurred .coudnt read specified file {e}"
 
 def list_files(path="."):
     try:
@@ -139,7 +142,16 @@ tools=[
 ]
 
 
-messages=[]
+messages=[
+    {
+        "role":"system",
+        "content":(
+            "You are a AI coding agent .Use tools to read,edit and run code. "
+            "after editing it,run it to verify it .keep your answers short and relevant "
+        )
+    }
+
+]
 while True:
     user_input=input("Thanu :")
     if user_input=="quit":
@@ -158,19 +170,38 @@ while True:
         tools=tools,
     )
     msg=response.choices[0].message
+    steps=0
     while msg.tool_calls:
+        steps+=1
+        if steps>10:
+            print("Stopped:too many steps")
+            break
+        print(f"\n===== STEP {steps}: AI requested {len(msg.tool_calls)} tool(s) =====")
         messages.append(msg)
         for call in msg.tool_calls:
             args=json.loads(call.function.arguments)
-            print("TOOL CALLED:", call.function.name, args)
+            print(f"[AI DECIDED] tool={call.function.name} args={args}")
             func=available_tools[call.function.name]
-            result=func(**args)
+            if call.function.name in("edit_file","run_command"):
+                answer=input(f"[PERMISSION] allow {call.function.name}? (y/n): ")
+                if answer.lower()!="y":
+                    result="User has denied this action"
+                    print("[DENIED] action skipped")
+                else:
+                    result=func(**args)
+                    print("[APPROVED] action executed")
+            else:
+                result=func(**args)
+                print("[AUTO] safe tool executed")
+
+            print("[RESULT]", str(result)[:300])
+
             messages.append({
                 "role":"tool",
                 "tool_call_id":call.id,
                 "content":str(result),
             })
-
+        print("[SENDING RESULTS BACK TO AI...]")
         response = client.chat.completions.create(
             model="openai/gpt-oss-20b",
             messages=messages,
@@ -179,8 +210,11 @@ while True:
         )
 
         msg=response.choices[0].message
+
+    print("\n===== AI FINISHED (plain text reply, loop ends) =====")
+    reply = msg.content or "(stopped: step limit)"
    
     messages.append({"role":"assistant","content":msg.content})
-    print("AI :",msg.content)
+    print("AI :",reply)
     # print(messages)
 
