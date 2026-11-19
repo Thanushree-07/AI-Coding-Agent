@@ -27,6 +27,9 @@ def list_files(path="."):
 
 def edit_file(path,content):
     try:
+        folder = os.path.dirname(path)
+        if folder:
+            os.makedirs(folder, exist_ok=True)
         with open(path,"w") as f:
             f.write(content)
         return f"Wrote {path}"
@@ -146,8 +149,10 @@ messages=[
     {
         "role":"system",
         "content":(
-            "You are a AI coding agent .Use tools to read,edit and run code. "
-            "after editing it,run it to verify it .keep your answers short and relevant "
+            "You are an AI coding agent. Use tools to read, edit and run code. "
+            "Only work inside the 'playgrounds' folder; put every new file there. "
+            "The OS is Windows, so use Windows commands and run tests with 'python -m pytest'. "
+            "After editing, run the code to verify it. Keep answers short and relevant."
         )
     }
 
@@ -173,7 +178,7 @@ while True:
     steps=0
     while msg.tool_calls:
         steps+=1
-        if steps>10:
+        if steps>20:
             print("Stopped:too many steps")
             break
         print(f"\n===== STEP {steps}: AI requested {len(msg.tool_calls)} tool(s) =====")
