@@ -139,4 +139,3 @@ A second run after these fixes is saved in `logs/log2_clean_success.txt`.
 ## Limitations
 
 - `edit_file` replaces the whole file, so the model must send the full text and anything left out is lost
-- The `playgrounds/` restriction is a prompt instruction, not enforced in code
