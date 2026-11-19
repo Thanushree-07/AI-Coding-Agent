@@ -13,6 +13,30 @@ def read_file(path):
         data=f.read()
     return data
 
+def list_files(path="."):
+    try:
+        return "\n".join(os.listdir(path))
+    except Exception as e:
+        return f"Error:{e}"
+
+# print(list_files("playgrounds"))
+
+def edit_file(path,content):
+    try:
+        with open(path,"w") as f:
+            f.write(content)
+        return f"Wrote {path}"
+    except Exception as e:
+        return f"error ocurred .coudnt write to specified file :{e}"
+
+
+available_tools={
+    "read_file":read_file,
+    "list_files":list_files,
+    "edit_file":edit_file
+}
+
+
 tools=[
     {
         "type":"function",
@@ -34,6 +58,53 @@ tools=[
                 "required":["path"]
             }
         }
+    },
+    {
+        "type":"function",
+        "function":
+        {
+            "name":"list_files",
+            "description":"list all files in the given directory",
+            "parameters":
+            {
+                "type":"object",
+                "properties":
+                {
+                    "path":
+                    {
+                    "type":"string",
+                    "description":"folder to list"
+                    },
+                },
+                "required":[],
+            },
+        },
+    },
+    {
+        "type":"function",
+        "function":
+        {
+            "name":"edit_file",
+            "description": "Replace the ENTIRE contents of a file with new content. Always read the file first, then send the full updated text. Also use this to create new files.",
+            "parameters":
+            {
+                "type":"object",
+                "properties":
+                {
+                    "path":
+                    {
+                        "type":"string",
+                        "description":"name of file whose contents need to be edited"
+                    },
+                    "content":
+                    {
+                        "type":"string",
+                        "description":"contains content"
+                    }
+                },
+                "required":["path","content"],
+            },
+        },
     }
 ]
 
@@ -57,25 +128,27 @@ while True:
         tools=tools,
     )
     msg=response.choices[0].message
-    if msg.tool_calls:
+    while msg.tool_calls:
         messages.append(msg)
-        call=msg.tool_calls[0]
-        args=json.loads(call.function.arguments)
-        result=read_file(args["path"])
-        messages.append({
-            "role":"tool",
-            "tool_call_id":call.id,
-            "content":result,
-        })
+        for call in msg.tool_calls:
+            args=json.loads(call.function.arguments)
+            print("TOOL CALLED:", call.function.name, args)
+            func=available_tools[call.function.name]
+            result=func(**args)
+            messages.append({
+                "role":"tool",
+                "tool_call_id":call.id,
+                "content":str(result),
+            })
 
-    response = client.chat.completions.create(
-        model="openai/gpt-oss-20b",
-        messages=messages,
-        tools=tools,
-        temperature=0.2,
-    )
+        response = client.chat.completions.create(
+            model="openai/gpt-oss-20b",
+            messages=messages,
+            tools=tools,
+            temperature=0.2,
+        )
 
-    msg=response.choices[0].message
+        msg=response.choices[0].message
    
     messages.append({"role":"assistant","content":msg.content})
     print("AI :",msg.content)
